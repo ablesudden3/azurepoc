@@ -1,0 +1,41 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: azure-devops-agent
+  namespace: default
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: azure-devops-agent
+  template:
+    metadata:
+      labels:
+        app: azure-devops-agent
+    spec:
+      containers:
+      - name: azure-devops-agent
+        image: mypocacr2242.azurecr.io/azp-agent:linux
+        env:
+        - name: AZP_URL
+          valueFrom:
+            secretKeyRef:
+              name: azdevops
+              key: AZP_URL
+        - name: AZP_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: azdevops
+              key: AZP_TOKEN
+        - name: AZP_POOL
+          valueFrom:
+            secretKeyRef:
+              name: azdevops
+              key: AZP_POOL
+        volumeMounts:
+        - name: docker-sock
+          mountPath: /var/run/docker.sock
+      volumes:
+      - name: docker-sock
+        hostPath:
+          path: /var/run/docker.sock
