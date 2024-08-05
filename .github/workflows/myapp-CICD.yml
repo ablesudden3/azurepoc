@@ -1,0 +1,103 @@
+name: Continuous Integration for the HTTP API
+
+on:
+  push:
+    branches:
+      - master
+    paths:
+      - 'app/**'
+  pull_request:
+    branches:
+      - master
+    paths:
+      - 'app/**'
+  workflow_dispatch:
+      
+jobs:
+  code_lint:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.x'
+
+      - name: Install dependencies
+        working-directory: ./app
+        run: pip install --no-cache-dir -r requirements.txt
+        
+      - name: Install pylint
+        run: pip install pylint
+
+      - name: Run pylint
+        working-directory: ./app
+        run: pylint app.py
+        
+  unit_tests:
+    needs: code_lint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.x'
+
+      - name: Install dependencies
+        working-directory: ./app
+        run: pip install --no-cache-dir -r requirements.txt
+
+      - name: Install pytest
+        run: pip install pytest
+
+      - name: Run Unit tests
+        working-directory: ./app
+        run: pytest -v testcases.py --junitxml=report.xml
+
+      - name: Publish Test Results
+        uses: EnricoMi/publish-unit-test-result-action@v2
+        if: always()
+        with:
+          files: ./app/report.xml
+
+  sonar_scan:
+    runs-on: ubuntu-latest
+    needs: unit_tests
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: SonarQube Scan
+      uses: sonarsource/sonarqube-scan-action@v2.3.0
+      with:
+        projectBaseDir: ./app
+        args: >
+          -Dsonar.projectKey=myapp-http-api
+          -Dsonar.organization=myapp-http-api
+          -Dsonar.verbose=true   
+      env:
+        SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        SONAR_HOST_URL: https://sonarcloud.io
+
+  build-and-push-to-acr:
+    needs: sonar_scan
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Log in to ACR
+        run: echo "${{ secrets.ACR_PASSWORD }}" | docker login ${{ secrets.ACR_REGISTRY }} -u ${{ secrets.ACR_USERNAME }} --password-stdin
+
+      - name: Build Docker image
+        working-directory: ./app
+        run: docker build . --tag mypocacr2242.azurecr.io/myapp:${{ github.run_number }}
+
+      - name: Push Docker image to ACR
+        run: docker push mypocacr2242.azurecr.io/myapp:${{ github.run_number }}
+        
