@@ -1,0 +1,31 @@
+# Azure DevOps YAML file for deploying to AKS
+
+trigger:
+- main
+
+resources:
+- repo: self
+
+variables:
+  # Existing image location (replace with your actual image URL)
+  image: mypocacr2242.azurecr.io/myapp:latest  # Example format
+  # AKS service connection (established in pipeline creation)
+  kubernetesServiceEndpoint: 'k8-poc'
+  # Kubernetes namespace
+  namespace: 'azure-poc-prod'
+
+stages:
+- stage: Deploy_to_AKS
+  displayName: Deploy to AKS
+  jobs:
+  - job: Patch_the_kubernetes_deployment
+    displayName: Patch Deployment with New Image
+    pool:
+      name: self-hosted-agents
+    steps:
+    - task: Kubernetes@1
+      inputs:
+        connectionType: 'Kubernetes Service Connection'
+        kubernetesServiceEndpoint: $(kubernetesServiceEndpoint)
+        namespace: $(namespace)
+        command: 'set image deployment/my-app flask-container=$(image)'
