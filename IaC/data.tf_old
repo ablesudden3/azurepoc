@@ -1,0 +1,10 @@
+data "azurerm_key_vault" "gobalvault" {
+  name                = "gobalvault"
+  resource_group_name =  var.resource_group_name
+}
+
+# Define the Key Vault Secret data source
+data "azurerm_key_vault_secret" "gobalvault_secret" {
+  name         = "storage-account-key"
+  key_vault_id = data.azurerm_key_vault.gobalvault.id
+}
