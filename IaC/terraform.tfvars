@@ -1,0 +1,9 @@
+client_id              = ""
+client_secret          = ""
+tenant_id              = "d092215b-fd99-4cc0-bbe5-03945f7938b4"
+subscription_id        = ""
+azurerm_resource_group = "poc-rg-2024"
+location               = "West US"
+storage_account_name   = "pocstorageaccount24422"
+vnet_name              = "poc-vnet"
+address_space          = ["192.168.0.0/16"]
